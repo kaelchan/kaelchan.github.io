@@ -4,6 +4,11 @@ layout: default
 <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
   <header class="post-header">
+    <!-- header for equations -->
+    <script type="text/javascript" async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+
     <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
     <p class="post-meta">
       <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
@@ -13,6 +18,12 @@ layout: default
       {%- if page.author -%}
         • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author }}</span></span>
       {%- endif -%}</p>
+      {%- if page.tags.size > 0 -%}
+        Tags:
+        {% for tag in page.tags %}
+          <small><a class="tag" href="/blogs/tags.html#{{ tag | slugify }}">{{ tag }}</a></small>
+        {% endfor %}
+      {%- endif -%}
   </header>
 
   <div class="post-content e-content" itemprop="articleBody">
