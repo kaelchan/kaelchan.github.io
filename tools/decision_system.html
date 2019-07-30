@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Decision System</title>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .dot {
+            height: 20px;
+            width: 20px;
+            background-color: #bbb;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="collapse bg-dark" id="navbarHeader">
+            <div class="container">
+                <div class="row">
+                    <div class="col-xs-1 py-4">
+                        <h4 class="text-white">About</h4>
+                        <p class="text-muted">This is used for deciding while hesitating among many choices.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar navbar-dark bg-dark shadow-sm">
+            <div class="container d-flex justify-content-between">
+                <a href="#" class="navbar-brand d-flex align-items-center">Decision System</a>
+
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+<main role="main">
+    <div class="container">
+        <div>
+            <h2>Available choices</h2>
+            <p>Enter the available choices separated by new lines.If you want biased decision, enter weights in the form of "[item];[weight]" (separated by ";"). The weight is set to 1 by default for each item.</p>
+            
+            <textarea id="choices" rows=4 cols=60 class="form-control my-2">Yes&#13;&#10;No</textarea>
+            <button id="confirm" onclick="GenerateFromText()" class="btn btn-primary btn-block my-2">Confirm</button>
+        </div>
+        <h2>Decision</h2>
+        <button id="decide" onclick="StartDecide()" class="btn btn-primary btn-block my-2">Decide!</button>
+        <div class="row">
+            <div class='col-md-6'>
+                <canvas id="canvas" width="300" height="300" style="border:1px solid #000000;"></canvas>
+            </div>
+            <div class='col-md-6'>
+                <ul class="list-group" id="legend">
+                    <li class="list-group-item">yes <span class="dot" /></li>
+                    <li class="list-group-item">no <span class="dot" /></li>
+                </ul>
+            </div>
+            
+        </div>
+
+    </div>
+</main>
+
+
+<script>
+    const canvas = document.getElementById("canvas")
+
+    const circleX = canvas.width / 2
+    const circleY = canvas.height / 2
+    const circleRadius  = canvas.width / 4
+
+    const refreshInterval = 10 // ms
+
+    // default set to yes/no selection
+    var decision = {
+        texts: ["Yes", "No"],
+        weights: [1, 1],
+        colors: ["red", "blue"],
+        result: null,
+        spinning: null,
+    }
+
+    function init() {
+        $("#choices").ready(GenerateFromText)
+    }
+
+    function getRandomColor() {
+        var letters = '0123456789ABCDEF'
+        var color = '#'
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)]
+        }
+        return color
+    }
+
+    function clearSpinning() {
+        if (decision.spinning) {
+            clearInterval(decision.spinning)
+            decision.spinning = null
+        }
+    }
+
+    function drawSector(startAngle, endAngle, fillStyle) {
+        var context = canvas.getContext("2d")
+        context.fillStyle = fillStyle
+        context.beginPath()
+        context.moveTo(circleX, circleY)
+        context.arc(circleX, circleY, circleRadius, startAngle, endAngle)
+        context.fill()
+    }
+
+    // draw the circle with the an offsetAngle (default to 0)
+    function drawCircle(offsetAngle = 0) {
+        var context = canvas.getContext("2d")
+        
+        var numberOfChoices = decision.texts.length
+        var sumOfWeights = 0
+        for (var i = 0; i < numberOfChoices; i++) {
+            sumOfWeights += decision.weights[i]
+        }
+
+        var angle = offsetAngle
+        for (var i = 0; i < numberOfChoices; i++) {
+            var fraction = decision.weights[i] / sumOfWeights
+            var endAnlge = angle + fraction * 2 * Math.PI
+            drawSector(angle, endAnlge, decision.colors[i])
+            angle = endAnlge
+        }
+    }
+
+    function debugPointer(startAngle, color) {
+        var context = canvas.getContext("2d")
+        context.beginPath()
+        context.moveTo(circleX, circleY)
+        context.arc(circleX, circleY, circleRadius, startAngle, startAngle+0.01)
+        context.fillStyle = "white"
+        context.fill()
+    }
+
+    function drawPointer() {
+        var context = canvas.getContext("2d")
+        context.beginPath()
+        context.moveTo(circleX + circleRadius / 2, circleY)
+        context.arc(circleX + circleRadius / 2, circleY, 0.6 * circleRadius, -0.01 * Math.PI, 0.01 * Math.PI)
+        context.fillStyle = "black"
+        context.fill()
+    }
+
+    function drawRoulette(offsetAngle = 0) {
+        var context = canvas.getContext("2d")
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        drawCircle(offsetAngle)
+        drawPointer()
+    }
+
+    // Spin the circle
+    // @param {double} initSpeed: How many arcs per millisecond (2 * PI = 1 round)
+    // @param {double} duration: How long does it take to stop (in milliseconds)
+    function Spin(initSpeed, duration) {
+        var duration_ms = duration
+
+        var spin = {
+            arc: 0,
+            speed: initSpeed,
+            acceleration: -initSpeed / duration_ms,
+        }
+
+        clearSpinning()
+
+        decision.spinning = setInterval(() => {
+            if (spin.speed < 0) {
+                console.log(spin)
+                ShowResult()
+                clearSpinning()
+                return
+            }
+            drawRoulette(spin.arc)
+            spin.arc += spin.speed * refreshInterval
+            spin.speed += spin.acceleration * refreshInterval
+            // console.log(spin)
+        }, refreshInterval)
+    }
+
+    function GenerateLegend() {
+        var sumOfWeights = 0
+        for (var index = 0; index < decision.weights.length; ++index) {
+            sumOfWeights += decision.weights[index]
+        }
+        $("#legend li").remove()
+        for (var index = 0; index < decision.texts.length; index++) {
+            var text = decision.texts[index]
+            var chance = decision.weights[index] / sumOfWeights * 100
+            var color = decision.colors[index]
+            $("#legend").append(`<li class="list-group-item">${text}; chance=${chance.toFixed(2)}%; color=<span class="dot" style="background-color:${color}"/></li>`)
+        }
+    }
+
+    // Generate the roulette from the texts
+    function GenerateFromText() {
+        console.log("GenerateFromText")
+        var text = $("#choices").val()
+        var lines = text.split("\n")
+        lines = lines.map($.trim)
+        lines = lines.filter(value => value)  // filter out empty lines
+        console.log(lines)
+        
+        var texts = []
+        var weights = []
+        var colors = []
+        for (var index = 0; index < lines.length; index++) {
+            var line = lines[index]
+            var splits = line.split(";")
+            var text = splits[0]
+            var weight = 1
+            if (splits.length > 2) {
+                alert("Too many \";\" in the input.")
+                return
+            } else if (splits.length == 2) {
+                weight = Number(splits[1])
+            }
+            texts.push(text)
+            weights.push(weight)
+            colors.push(getRandomColor())
+        }
+        console.log(texts)
+        console.log(weights)
+
+        // replace current pool
+        clearSpinning()
+        console.log(decision)
+        decision.texts = texts
+        decision.weights = weights
+        decision.colors = colors
+        console.log(decision)
+
+        drawRoulette()
+        GenerateLegend()
+    }
+
+    function ShowResult() {
+        alert(`Decided: ${decision.texts[decision.result]}!`)
+        console.log(`Decided: ${decision.texts[decision.result]}!`)
+    }
+
+    function ValidateFair(low, high, duration) {
+        var diffArc = (high - low) / 2 * duration
+        var diffRound = diffArc / 2 / Math.PI
+        return Math.abs(diffRound - Math.round(diffRound)) < 1e-3
+    }
+
+    function CalculateResult(speed, duration) {
+        var spin = {
+            arc: 0,
+            speed: speed,
+            acceleration: -speed / duration,
+        }
+        while (spin.speed >= 0) {
+            spin.arc += spin.speed * refreshInterval
+            spin.speed += spin.acceleration * refreshInterval
+        }
+        
+        // console.log(spin.arc)
+        var remain = spin.arc % (2 * Math.PI)
+        // console.log(remain)
+        if (remain < 0) {
+            console.log("Internal Warning: Remain < 0")
+            remain += 2 * Math.PI
+        }
+        // Equivalently, the pointer spins counterclockwise.
+        var chosen = 1 - remain / (2 * Math.PI)
+
+        var sumOfWeights = 0
+        for (var index = 0; index < decision.weights.length; index++) {
+            sumOfWeights += decision.weights[index]
+        }
+        var sumOfFraction = 0
+        for (var index = 0; index < decision.weights.length; index++) {
+            sumOfFraction += decision.weights[index] / sumOfWeights
+            if (sumOfFraction >= chosen) {
+                decision.result = index
+                return
+            }
+        }
+
+        alert("Internal Error: no result chosen")
+        decision.result = decision.texts.length - 1  // get the last one
+    }
+
+    // Start to decide
+    function StartDecide() {
+        var low = 0.1 * Math.PI
+        var high = 0.2 * Math.PI
+        var duration = 10000
+        var speed = low + (high - low) * Math.random()
+        if (!ValidateFair(low, high, duration)) {
+            alert("not fair")
+            return
+        }
+        GenerateLegend()
+        CalculateResult(speed, duration)
+        Spin(speed, duration)
+    }
+
+    function test(low, high, duration) {
+        selected = []
+        for (var i = 0; i < decision.texts.length; i++) {
+            selected.push(0)
+        }
+        
+        for (var i = 0; i < 1000000; i++) {
+            speed = low + (high - low) * Math.random()
+            CalculateResult(speed, duration)
+            selected[decision.result]++
+        }
+        
+        console.log(selected)
+    }
+
+    init()
+</script>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+</html>
