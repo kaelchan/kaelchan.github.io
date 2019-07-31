@@ -306,9 +306,9 @@
 
     // Start to decide
     function StartDecide() {
-        var low = 0.1 * Math.PI
-        var high = 0.2 * Math.PI
-        var duration = 10000
+        var low = 0.005 * Math.PI
+        var high = 0.025 * Math.PI
+        var duration = 4000
         var speed = low + (high - low) * Math.random()
         if (!ValidateFair(low, high, duration)) {
             alert("not fair")
