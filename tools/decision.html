@@ -28,6 +28,30 @@
             background-color: #bbb;
             display: inline-block;
         }
+
+        .slot-machine {
+            background: #fafafa;
+            box-shadow: 0 0 3px 2px rgba(0, 0, 0, 0.4) inset;
+
+            width: 1000px;
+            height: 150px;
+            overflow: hidden;
+
+            border-radius: 1ex;
+            margin: 1ch;
+            display: flex;
+        }
+
+        .slot {
+            transition: transform 5s ease-in-out;
+        }
+
+        .box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+        }
     </style>
 </head>
 
@@ -38,7 +62,7 @@
                 <div class="row">
                     <div class="col-xs-1 py-4">
                         <h4 class="text-white">About</h4>
-                        <p class="text-muted">This is used for deciding while hesitating among many choices.</p>
+                        <p class="text-muted">This is used for deciding while hesitating among many options.</p>
                     </div>
                 </div>
             </div>
@@ -47,7 +71,6 @@
         <div class="navbar navbar-dark bg-dark shadow-sm">
             <div class="container d-flex justify-content-between">
                 <a href="#" class="navbar-brand d-flex align-items-center">Decision System</a>
-
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader"
                     aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -58,79 +81,326 @@
 
     <main role="main">
         <div class="container">
-            <div>
-                <h2>Available Choices</h2>
-                You can choose from either predefined choicse, or create your own custom decisions.
-
+            <h2>Step 1: Define Your Question</h2>
+            <div id="choose-question-input-source">
+                Before making a decision, you need to define your question. You can:
                 <div>
-                    <h3>Predefined Decisions</h3>
-                    <select id="selectPredefinedDecisions" size=6>
-                        <option value="yes/no">Yes/No</option>
-                        <option value="3-equal">3 equal</option>
-                        <option value="4-equal">4 equal</option>
-                        <option value="5-equal">5 equal</option>
-                        <option value="6-equal">6 equal</option>
-                        <option value="10-equal">10 equal</option>
-                    </select>
-                    <br>
-                    <button id="predefinedConfirm" onclick="generatePredefined()"
-                        class="btn btn-primary btn-block my-2">Confirm</button>
+                    <button class="btn btn-primary btn-block my-2" onclick="SetQuestionInputSource('predefined')">
+                        Predefined Questions
+                    </button>
+                    <button class="btn btn-primary btn-block my-2" onclick="SetQuestionInputSource('custom-row')">
+                        Custom Questions from Rows of a Table
+                    </button>
+                    <button class="btn btn-primary btn-block my-2" onclick="SetQuestionInputSource('custom-text')">
+                        Custom Questions from Free Text
+                    </button>
                 </div>
-
-                <div>
-                    <h3>Custom Decision</h3>
-                    <p>Enter the available choices separated by new lines. If you want biased decision, enter weights in
-                        the
-                        form of "[item];[weight]" (separated by ";"). The weight is set to 1 by default for each item.
+            </div>
+            <div id="question-input" hidden="true">
+                <button onclick="ChooseQuestionInputSource()" class="btn btn-secondary btn-block my-2">
+                    Back to choose another input method
+                </button>
+                <div id="predefined-question" hidden="true">
+                    <h3>Choose from Predefined Questions</h3>
+                    Choose from one of the following predefined questions.
+                    <div>
+                        <select id="predefined-question-selection" size=6>
+                            <option value="yes/no" selected>Yes/No</option>
+                            <option value="3-equal">3 equal</option>
+                            <option value="4-equal">4 equal</option>
+                            <option value="5-equal">5 equal</option>
+                            <option value="6-equal">6 equal</option>
+                            <option value="10-equal">10 equal</option>
+                        </select>
+                    </div>
+                    <button onclick="SetQuestionFromPredefined()" class="btn btn-primary btn-block my-2">
+                        Confirm
+                    </button>
+                </div>
+                <div id="custom-row-question" hidden="true">
+                    <h3>Input from Custom Options</h3>
+                    For each option of the custom question, add one row in the following table.
+                    <div>
+                        <table id="custom-row-table" class="table">
+                            <thead>
+                                <tr>
+                                    <th>Option</th>
+                                    <th>Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <button class="btn btn-secondary" onclick="AddOneOptionInCustomRowQuestionTable()">
+                            Add an option
+                        </button>
+                        <button class="btn btn-secondary" onclick="SetInitialCustomRowQuestionTable()">
+                            Reset
+                        </button>
+                    </div>
+                    <button onclick="SetQuestionFromCustomRow()" class="btn btn-primary btn-block my-2">
+                        Confirm
+                    </button>
+                </div>
+                <div id="custom-text-question" hidden="true">
+                    <h3>Input from Custom Text</h3>
+                    <p>Enter the available options and their weights separated by new lines in the form of
+                        "[option];[weight]" (separated by ";"). The weight is set to 1 by default (when omitted) for
+                        each option.
                     </p>
-                    <textarea id="choices" rows=4 cols=60 class="form-control my-2">Yes&#13;&#10;No</textarea>
+                    <textarea id="custom-text-options" rows=4 cols=60
+                        class="form-control my-2">Yes&#13;&#10;No</textarea>
+                    <button id="confirm" onclick="SetQuestionFromCustomText()" class="btn btn-primary btn-block my-2">
+                        Confirm
+                    </button>
                 </div>
-
-                <button id="confirm" onclick="GenerateFromText()"
-                    class="btn btn-primary btn-block my-2">Confirm</button>
             </div>
-            <h2>Decision</h2>
-            <button id="decide" onclick="StartDecide()" class="btn btn-primary btn-block my-2">Decide!</button>
-            <div class="row">
-                <div class='col-md-6'>
-                    <canvas id="canvas" width="300" height="300" style="border:1px solid #000000;"></canvas>
+            <div>
+                <h2>Step 2: Define Your Decision Display</h2>
+                You can choose from the following displaying options:
+                <div>
+                    <button class="btn btn-primary btn-block my-2" onclick="SetDecisionDisplay(kDisplayTypeRoulette)">
+                        Roulette
+                    </button>
+                    <button class="btn btn-primary btn-block my-2" onclick="SetDecisionDisplay(kDisplayTypeSlot)">
+                        Slot Machine
+                    </button>
                 </div>
-                <div class='col-md-6'>
-                    <ul class="list-group" id="legend">
-                        <li class="list-group-item">yes <span class="dot" /></li>
-                        <li class="list-group-item">no <span class="dot" /></li>
-                    </ul>
-                </div>
-
             </div>
-
+            <div>
+                <h2>Step 3: Let Random Decides!</h2>
+                <button id="decide" onclick="Decide()" class="btn btn-primary btn-block my-2">
+                    Decide!
+                </button>
+                <div class="row" id="display-roulette" hidden="true">
+                    <div class='col-md-6'>
+                        <canvas id="roulette-canvas" width="300px" height="300px"
+                            style="border:1px solid #000000;"></canvas>
+                    </div>
+                    <div class='col-md-6'>
+                        <ul class="list-group" id="legend" style="height: 500px; overflow:auto;">
+                        </ul>
+                    </div>
+                </div>
+                <div class="slot-machine" id="display-slot-machine" hidden="true">
+                </div>
+            </div>
+            <div id="final-decision" hidden="true"></div>
         </div>
     </main>
 
 
+    <!-- Script to control the UI for inputting the question. -->
     <script>
-        const canvas = document.getElementById("canvas")
+        const kQuestionSourcePredefined = 'predefined'
+        const kQuestionSourceCustomRows = 'custom-row'
+        const kQuestionSourceCustomText = 'custom-text'
+        var question_input_source
 
-        const circleX = canvas.width / 2
-        const circleY = canvas.height / 2
-        const circleRadius = canvas.width / 4
+        function DeleteIcon() {
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                < path d = "M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z" />
+            </svg >`
+        }
 
-        const refreshInterval = 10 // ms
+        function CreateOneRowInCustomRowQuestionTable(option, weight) {
+            var $row = $(document.createElement('tr'))
+                // option
+                .append($(document.createElement('td'))
+                    .append($(document.createElement('input'))
+                        .prop('class', 'form-control')
+                        .prop('type', 'text')
+                        .val(option)))
+                // weight
+                .append($(document.createElement('td'))
+                    .append($(document.createElement('input'))
+                        .prop('class', 'form-control')
+                        .prop('type', 'number')
+                        .prop('step', 'any')
+                        .val(weight)))
+            $row.append($(document.createElement('td'))
+                .append($(document.createElement('button'))
+                    .addClass('btn btn-outline-danger')
+                    .append($(DeleteIcon()))
+                    .on('click', () => { $(this).parents('tr').remove() })))
+            return $row
+        }
 
-        // default set to yes/no selection
-        var decision = {
-            texts: ["Yes", "No"],
+        function AddOneOptionInCustomRowQuestionTable() {
+            console.log('AddOneOptionInCustomRowQuestionTable')
+            var tbody = $('#custom-row-table tbody')
+            tbody.append(CreateOneRowInCustomRowQuestionTable('option', 1))
+        }
+
+        function SetInitialCustomRowQuestionTable() {
+            var tbody = $('#custom-row-table tbody')
+            console.debug(tbody.length)
+            tbody.html('')
+            for (const option of ['Yes', 'No']) {
+                tbody.append(CreateOneRowInCustomRowQuestionTable(option, 1))
+            }
+        }
+
+        function SetQuestionInputSource(source) {
+            console.log(`SetQuestionInputSource source = ${source}`)
+            switch (source) {
+                case kQuestionSourcePredefined:
+                    question_input_source = $('#predefined-question')
+                    break;
+                case kQuestionSourceCustomRows:
+                    question_input_source = $('#custom-row-question')
+                    SetInitialCustomRowQuestionTable()
+                    break;
+                case kQuestionSourceCustomText:
+                    question_input_source = $('#custom-text-question')
+                    break;
+                default:
+                    console.error('wrong input:', source)
+                    return
+            }
+            $('#choose-question-input-source').prop('hidden', true)
+            $('#question-input').prop('hidden', false)
+            question_input_source.prop('hidden', false)
+        }
+
+        function ChooseQuestionInputSource() {
+            console.log("ChooseQuestionInputSource")
+            question_input_source.prop('hidden', true)
+            $('#question-input').prop('hidden', true)
+            $('#choose-question-input-source').prop('hidden', false)
+        }
+    </script>
+
+    <!-- Script for the logic that sets the question from the user inputs. -->
+    <script>
+        // The global variable that stores the current question: a set of options and weights.
+        var Question = {
+            options: ['Yes', 'No'],
             weights: [1, 1],
-            colors: ["red", "blue"],
-            result: null,
-            spinning: null,
         }
 
-        function init() {
-            $("#choices").ready(GenerateFromText)
+        function SetQuestionWithNEqual(n) {
+            Question.options = []
+            for (var i = 1; i <= n; ++i) {
+                Question.options.push(i.toString())
+            }
+            Question.weights = Array(Question.options.length).fill(1)
         }
 
-        function getRandomColor() {
+        function SetQuestionFromPredefined() {
+            console.log('SetQuestionFromCustomRow')
+            var value = $('#predefined-question-selection').val()
+            if (value == null) {
+                alert('Please choose an option before clicking \"Confirm\"')
+            }
+            switch (value) {
+                case 'yes/no':
+                    Question.options = ['Yes', 'No']
+                    Question.weights = [1, 1]
+                    break;
+                case '3-equal':
+                    SetQuestionWithNEqual(3)
+                    break;
+                case '4-equal':
+                    SetQuestionWithNEqual(4)
+                    break;
+                case '5-equal':
+                    SetQuestionWithNEqual(5)
+                    break;
+                case '6-equal':
+                    SetQuestionWithNEqual(6)
+                    break;
+                case '10-equal':
+                    SetQuestionWithNEqual(10)
+                    break;
+                default:
+                    alert('Unsupported:', value)
+                    break;
+            }
+            ResetDecisionSystem()
+        }
+
+        function SetQuestionFromCustomRow() {
+            console.log('SetQuestionFromCustomRow')
+            options = []
+            weights = []
+            $('#custom-row-table tbody tr').each(function (index, row) {
+                var $inputs = $(row).find('td').children('input')
+                var option = $inputs.eq(0).val()
+                var weight = parseFloat($inputs.eq(1).val())
+                options.push(option)
+                weights.push(weight)
+            })
+            if (options.length < 2) {
+                alert('Please input at least two options.')
+                return
+            }
+            Question.options = options
+            Question.weights = weights
+            ResetDecisionSystem()
+        }
+
+        function SetQuestionFromCustomText() {
+            console.log('SetQuestionFromCustomText')
+            options = []
+            weights = []
+            var text = $('#custom-text-question #custom-text-options').val()
+            var rows = text.split('\n')
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i].trim()
+                if (row.length == 0) {
+                    continue
+                }
+                var row_split = row.split(';')
+                if (row_split.length > 2) {
+                    alert(`Syntax error at row ${i + 1}: there are more than one ";" in the row`)
+                    return
+                }
+                options.push(row_split[0].trim())
+                var weight = 1
+                if (row_split.length == 2) {
+                    weight = Number(row_split[1])
+                    console.log(weight)
+                    if (isNaN(weight)) {
+                        alert(`Syntax error at row ${i + 1}: the weight should be a number, instead got: ${row_split[1]}`)
+                        return
+                    }
+                }
+                weights.push(weight)
+            }
+            Question.options = options
+            Question.weights = weights
+            ResetDecisionSystem()
+        }
+    </script>
+
+    <!-- Script for deciding display types. -->
+    <script>
+        const kDisplayTypeRoulette = 'roulette'
+        const kDisplayTypeSlot = 'slot'
+        // Default as roulette.
+        var DisplayType = kDisplayTypeRoulette
+
+        function SetDecisionDisplay(type) {
+            console.log(`SetDecisionDisplay type = ${type}`)
+            DisplayType = type
+            ResetDecisionSystem()
+        }
+    </script>
+
+    <!-- Script for generating a roulette. -->
+    <script>
+        var Roulette = function () {
+            var roulette = {}
+            roulette.canvas = $('#roulette-canvas')[0]
+            roulette.circleX = roulette.canvas.width / 2
+            roulette.circleY = roulette.canvas.height / 2
+            roulette.circleRadius = roulette.canvas.width / 4
+            roulette.colors = []
+            return roulette
+        }()
+
+        function GetRandomColor() {
             var letters = '0123456789ABCDEF'
             var color = '#'
             for (var i = 0; i < 6; i++) {
@@ -139,281 +409,327 @@
             return color
         }
 
-        function clearSpinning() {
-            if (decision.spinning) {
-                clearInterval(decision.spinning)
-                decision.spinning = null
-            }
-        }
-
-        function drawSector(startAngle, endAngle, fillStyle) {
-            var context = canvas.getContext("2d")
-            context.fillStyle = fillStyle
+        function DrawSector(start_arc, end_arc, fill_style) {
+            var context = Roulette.canvas.getContext("2d")
+            context.fillStyle = fill_style
             context.beginPath()
-            context.moveTo(circleX, circleY)
-            context.arc(circleX, circleY, circleRadius, startAngle, endAngle)
+            context.moveTo(Roulette.circleX, Roulette.circleY)
+            context.arc(Roulette.circleX, Roulette.circleY, Roulette.circleRadius, start_arc, end_arc)
             context.fill()
         }
 
-        // draw the circle with the an offsetAngle (default to 0)
-        function drawCircle(offsetAngle = 0) {
-            var context = canvas.getContext("2d")
-
-            var numberOfChoices = decision.texts.length
-            var sumOfWeights = 0
-            for (var i = 0; i < numberOfChoices; i++) {
-                sumOfWeights += decision.weights[i]
-            }
-
-            var angle = offsetAngle
-            for (var i = 0; i < numberOfChoices; i++) {
-                var fraction = decision.weights[i] / sumOfWeights
-                var endAnlge = angle + fraction * 2 * Math.PI
-                drawSector(angle, endAnlge, decision.colors[i])
-                angle = endAnlge
+        // draw the circle with the an offset_arc (default to 0)
+        function DrawCircle(offset_arc = 0) {
+            var num = DecisionSystem.question.options.length
+            // For context.arc, the arc increases clock-wise.
+            var start_arc = -offset_arc
+            for (var i = 0; i < DecisionSystem.decision_thresholds.length; i++) {
+                var end_arc = -offset_arc + DecisionSystem.decision_thresholds[i] * 2 * Math.PI
+                DrawSector(start_arc, end_arc, Roulette.colors[i])
+                start_arc = end_arc
             }
         }
 
-        function debugPointer(startAngle, color) {
-            var context = canvas.getContext("2d")
+        function DrawPointer() {
+            var context = Roulette.canvas.getContext("2d")
             context.beginPath()
-            context.moveTo(circleX, circleY)
-            context.arc(circleX, circleY, circleRadius, startAngle, startAngle + 0.01)
-            context.fillStyle = "white"
-            context.fill()
-        }
-
-        function drawPointer() {
-            var context = canvas.getContext("2d")
-            context.beginPath()
-            context.moveTo(circleX + circleRadius / 2, circleY)
-            context.arc(circleX + circleRadius / 2, circleY, 0.6 * circleRadius, -0.01 * Math.PI, 0.01 * Math.PI)
+            context.moveTo(Roulette.circleX + Roulette.circleRadius / 2, Roulette.circleY)
+            context.arc(
+                Roulette.circleX + Roulette.circleRadius / 2,
+                Roulette.circleY,
+                // A little over the roulette circle.
+                0.6 * Roulette.circleRadius,
+                -0.01 * Math.PI,
+                0.01 * Math.PI)
             context.fillStyle = "black"
             context.fill()
         }
 
-        function drawRoulette(offsetAngle = 0) {
-            var context = canvas.getContext("2d")
-            context.clearRect(0, 0, canvas.width, canvas.height)
-            drawCircle(offsetAngle)
-            drawPointer()
-        }
-
-        // Spin the circle
-        // @param {double} initSpeed: How many arcs per millisecond (2 * PI = 1 round)
-        // @param {double} duration: How long does it take to stop (in milliseconds)
-        function Spin(initSpeed, duration) {
-            var duration_ms = duration
-
-            var spin = {
-                arc: 0,
-                speed: initSpeed,
-                acceleration: -initSpeed / duration_ms,
-            }
-
-            clearSpinning()
-
-            decision.spinning = setInterval(() => {
-                if (spin.speed < 0) {
-                    console.log(spin)
-                    ShowResult()
-                    clearSpinning()
-                    return
-                }
-                drawRoulette(spin.arc)
-                spin.arc += spin.speed * refreshInterval
-                spin.speed += spin.acceleration * refreshInterval
-                // console.log(spin)
-            }, refreshInterval)
-        }
-
-        function GenerateLegend() {
-            var sumOfWeights = 0
-            for (var index = 0; index < decision.weights.length; ++index) {
-                sumOfWeights += decision.weights[index]
-            }
+        function GenerateLegends() {
             $("#legend li").remove()
-            for (var index = 0; index < decision.texts.length; index++) {
-                var text = decision.texts[index]
-                var chance = decision.weights[index] / sumOfWeights * 100
-                var color = decision.colors[index]
-                $("#legend").append(`<li class="list-group-item">${text}; chance=${chance.toFixed(2)}%; color=<span class="dot" style="background-color:${color}"/></li>`)
+            for (var i = 0; i < DecisionSystem.question.options.length; i++) {
+                var option = DecisionSystem.question.options[i]
+                var chance = 100 * (DecisionSystem.decision_thresholds[i] - ((i > 0) ? DecisionSystem.decision_thresholds[i - 1] : 0))
+                var color = Roulette.colors[i]
+                $("#legend").append(`<li class="list-group-item">${option}; chance=${chance.toFixed(2)}%; color=<span class="dot" style="background-color:${color}"/></li>`)
             }
         }
 
-        // Generate the roulette from the texts
-        function GenerateFromText() {
-            console.log("GenerateFromText")
-            var text = $("#choices").val()
-            var lines = text.split("\n")
-            lines = lines.map($.trim)
-            lines = lines.filter(value => value)  // filter out empty lines
-            console.log(lines)
-
-            var texts = []
-            var weights = []
-            var colors = []
-            for (var index = 0; index < lines.length; index++) {
-                var line = lines[index]
-                var splits = line.split(";")
-                var text = splits[0]
-                var weight = 1
-                if (splits.length > 2) {
-                    alert("Too many \";\" in the input.")
-                    return
-                } else if (splits.length == 2) {
-                    weight = Number(splits[1])
-                }
-                texts.push(text)
-                weights.push(weight)
-                colors.push(getRandomColor())
+        function ShowDisplayRoulette(question) {
+            Roulette.colors = []
+            for (var i = 0; i < DecisionSystem.decision_thresholds.length; i++) {
+                Roulette.colors.push(GetRandomColor())
             }
-            console.log(texts)
-            console.log(weights)
-
-            // replace current pool
-            clearSpinning()
-            console.log(decision)
-            decision.texts = texts
-            decision.weights = weights
-            decision.colors = colors
-            console.log(decision)
-
-            drawRoulette()
-            GenerateLegend()
+            DrawRoulette(0)
+            GenerateLegends()
+            $('#display-roulette').prop('hidden', false)
         }
 
-        function generateNEqual(n) {
-            decision.texts = []
-            for (var i = 1; i <= n; ++i) {
-                decision.texts.push(i.toString())
-            }
-            decision.weights = Array(n).fill(1)
-            decision.colors = []
-            for (var i = 1; i <= n; ++i) {
-                decision.colors.push(getRandomColor())
+        function ClearRouletteSpinning() {
+            if (Roulette && Roulette.spinning) {
+                clearInterval(Roulette.spinning)
+                Roulette.spinning = null
             }
         }
 
-        function generatePredefined() {
-            console.log("generatePredefined")
-            var value = $("#selectPredefinedDecisions").val()
-            console.log(value)
-            if (value === null) {
-                alert('Please choose a predefined decision from the list before click "Confirm"')
-            }
-            switch (value) {
-                case "yes/no":
-                    decision.texts = ['Yes', 'No']
-                    decision.weights = Array(decision.texts.length).fill(1)
-                    decision.colors = ['#008000', '#FF0000']
-                    break;
-                case "3-equal":
-                    generateNEqual(3)
-                    break;
-                case "4-equal":
-                    generateNEqual(4)
-                    break;
-                case "5-equal":
-                    generateNEqual(5)
-                    break;
-                case "6-equal":
-                    generateNEqual(6)
-                    break;
-                case "10-equal":
-                    generateNEqual(10)
-                    break;
-                case "100-equal":
-                    generateNEqual(100)
-                    break;
-                default:
-                    alert('WIP');
-            }
-            console.log(decision)
-            drawRoulette()
-            GenerateLegend()
+        function DrawRoulette(offset_arc = 0) {
+            DrawCircle(offset_arc)
+            DrawPointer()
         }
 
-        function ShowResult() {
-            alert(`Decided: ${decision.texts[decision.result]}!`)
-            console.log(`Decided: ${decision.texts[decision.result]}!`)
-        }
-
-        function ValidateFair(low, high, duration) {
-            var diffArc = (high - low) / 2 * duration
-            var diffRound = diffArc / 2 / Math.PI
-            return Math.abs(diffRound - Math.round(diffRound)) < 1e-3
-        }
-
-        function CalculateResult(speed, duration) {
+        function RunDisplayRoulette(result) {
+            const kRefreshIntervalMs = 10
+            // A circle is divided into kNumDivision divisions.
+            const kNumDivision = 1000
+            const kInitStep = 50
             var spin = {
-                arc: 0,
-                speed: speed,
-                acceleration: -speed / duration,
+                step: kInitStep,
+                stable_intervals: 200,
+                spinned: 0,
+                count_interval: 0,
             }
-            while (spin.speed >= 0) {
-                spin.arc += spin.speed * refreshInterval
-                spin.speed += spin.acceleration * refreshInterval
-            }
-
-            // console.log(spin.arc)
-            var remain = spin.arc % (2 * Math.PI)
-            // console.log(remain)
-            if (remain < 0) {
-                console.log("Internal Warning: Remain < 0")
-                remain += 2 * Math.PI
-            }
-            // Equivalently, the pointer spins counterclockwise.
-            var chosen = 1 - remain / (2 * Math.PI)
-
-            var sumOfWeights = 0
-            for (var index = 0; index < decision.weights.length; index++) {
-                sumOfWeights += decision.weights[index]
-            }
-            var sumOfFraction = 0
-            for (var index = 0; index < decision.weights.length; index++) {
-                sumOfFraction += decision.weights[index] / sumOfWeights
-                if (sumOfFraction >= chosen) {
-                    decision.result = index
-                    return
-                }
-            }
-
-            alert("Internal Error: no result chosen")
-            decision.result = decision.texts.length - 1  // get the last one
-        }
-
-        // Start to decide
-        function StartDecide() {
-            var low = 0.005 * Math.PI
-            var high = 0.025 * Math.PI
-            var duration = 4000
-            var speed = low + (high - low) * Math.random()
-            if (!ValidateFair(low, high, duration)) {
-                alert("not fair")
+            if (spin.step * spin.stable_intervals % kNumDivision != 0) {
+                alert('Wrong spin configuration')
+                console.error(spin)
                 return
             }
-            GenerateLegend()
-            CalculateResult(speed, duration)
-            Spin(speed, duration)
+            spin.target = Math.floor(result * kNumDivision) + 3 * kNumDivision
+            spin.target_remaining = spin.target
+
+            Roulette.spinning = setInterval(() => {
+                spin.count_interval += 1
+                if (spin.count_interval <= spin.stable_intervals) {
+                    spin.spinned += spin.step
+                } else {
+                    spin.spinned += spin.step
+                    spin.target_remaining -= spin.step
+                    // The ratio is set so the step decrease slower (measured by spinned) when the step is larger.
+                    var ratio = 1 - Math.pow((1 - spin.target_remaining / spin.target), 2)
+                    spin.step = Math.max(1, Math.ceil(kInitStep * ratio))
+                }
+                var arc = (spin.spinned % kNumDivision) / kNumDivision * 2 * Math.PI
+                spin.arc = arc
+                DrawRoulette(arc)
+                console.debug(spin)
+                if (spin.target_remaining <= 0) {
+                    ClearRouletteSpinning()
+                    AnnounceDecision()
+                    return
+                }
+            }, kRefreshIntervalMs)
+        }
+    </script>
+
+    <!-- Script for generating a slot machine. -->
+    <script>
+        function ShowDisplaySlotMachine() {
+            console.log('ShowDisplaySlotMachine')
+            ResetSlotMachine()
+            $('#display-slot-machine').prop('hidden', false)
         }
 
-        function test(low, high, duration) {
-            selected = []
-            for (var i = 0; i < decision.texts.length; i++) {
-                selected.push(0)
+        function WeightedRandomSample(cumulative_weights) {
+            var random = Math.random()
+            for (var i = 0; i < DecisionSystem.decision_thresholds.length; i++) {
+                if (random < DecisionSystem.decision_thresholds[i]) {
+                    return i
+                }
             }
-
-            for (var i = 0; i < 1000000; i++) {
-                speed = low + (high - low) * Math.random()
-                CalculateResult(speed, duration)
-                selected[decision.result]++
-            }
-
-            console.log(selected)
+            console.error('Invalid cumulative weights: ', cumulative_weights)
         }
 
-        init()
+        function CreateBox(width, height, text) {
+            return $(document.createElement('div'))
+                .addClass('box')
+                .css('width', width + 'px')
+                .css('height', height + 'px')
+                .text(text)
+        }
+
+        function ResetSlotMachine() {
+            var $slot_machine = $('#display-slot-machine')
+            $slot_machine
+                .empty()
+                .append(CreateBox($slot_machine.innerWidth(), $slot_machine.innerHeight(), '(please press "Decide!")'))
+        }
+
+        function RunDisplaySlotMachine(decision) {
+            var $slot_machine = $('#display-slot-machine')
+            $slot_machine.empty()
+            var $slot = $(document.createElement('div')).addClass('slot')
+            $slot_machine.append($slot)
+
+            var sum_weight = 0
+            for (var i = 0; i < DecisionSystem.question.weights.length; i++) {
+                sum_weight += DecisionSystem.question.weights[i]
+            }
+            const kMinBoxCount = 30;
+            const kMaxBoxCount = 100;
+            var boxes = []
+            while ((boxes.length < kMinBoxCount) || (boxes.length <= kMaxBoxCount && boxes[boxes.length - 1] != DecisionSystem.decision)) {
+                boxes.push(WeightedRandomSample(DecisionSystem.decision_thresholds))
+            }
+            // Make sure that the decision is aligned.
+            if (boxes[boxes.length - 1] != DecisionSystem.decision) {
+                boxes.push(DecisionSystem.decision)
+            }
+            $slot.on(
+                "transitionend",
+                function () {
+                    AnnounceDecision()
+                    $slot.off('transitionend')
+                },
+            );
+            console.log(boxes)
+
+            for (var i = 0; i < boxes.length; i++) {
+                $slot.append(CreateBox(
+                    $slot_machine.innerWidth(),
+                    $slot_machine.innerHeight(),
+                    DecisionSystem.question.options[boxes[i]]
+                ))
+            }
+            $slot.css({
+                'transitionDuration': '5s',
+                'transition-timing-function': 'ease-in-out',
+                'transform': `translateY(-${$slot_machine.innerHeight() * (boxes.length - 1)}px)`
+            })
+        }
+
+    </script>
+
+    <!-- Script for generating the decision system UI. -->
+    <script>
+        var DecisionSystem = {
+            question: null,
+            display_type: null,
+            // The full range is [0, 1.0), divided by thresholds t[i]
+            // as follows:
+            // 0      <= result < t[0], the decision is question.options[0]
+            // t[0]   <= result < t[1], the decision is question.options[1]
+            // ...
+            // t[n-2] <= result < 1.0,  the decision is question.options[n-1]
+            // (t[n-1] is fixed to be 1.0)
+            decision_thresholds: [],
+            // result is a number in the range [0, 1)
+            result: null,
+            // The final decision. The value is an index to question.options.
+            decision: null,
+        }
+
+        function IsSameQuestion(question1, question2) {
+            if ((question1 === null) != (question2 === null)) {
+                return false
+            }
+            // Both are null.
+            if (question1 === null) {
+                return true
+            }
+            if (question1.options.length != question2.options.length ||
+                question1.weights.length != question2.weights.length) {
+                return false
+            }
+            if (question1.options.length != question1.weights.length) {
+                console.log(question1)
+                alert('Invalid question.')
+                return false
+            }
+            for (var i = 0; i < question1.options.length; i++) {
+                if (question1.options[i] != question2.options[i] ||
+                    question1.weights[i] != question2.weights[i]) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        function ResetAllDisplays() {
+            $('#display-roulette').prop('hidden', true)
+            ClearRouletteSpinning()
+            $('#display-slot-machine').prop('hidden', true)
+            ResetSlotMachine()
+        }
+
+        function DisplayDecisionSystem(display_type, question) {
+            ResetAllDisplays()
+            switch (display_type) {
+                case kDisplayTypeRoulette:
+                    ShowDisplayRoulette(question)
+                    break
+                case kDisplayTypeSlot:
+                    ShowDisplaySlotMachine()
+                    break
+                default:
+                    alert('Invalid display type: ' + display_type)
+            }
+        }
+
+        function ResetDecisionSystem() {
+            console.log('ResetDecisionSystem')
+            if (IsSameQuestion(DecisionSystem.question, Question) && DecisionSystem.display_type == DisplayType) {
+                console.log('Decision system did not change.')
+                return
+            }
+            DecisionSystem.question = structuredClone(Question)
+            DecisionSystem.display_type = DisplayType
+            var sum_weight = 0.0
+            var cumulative_weights = []
+            for (var i = 0; i < DecisionSystem.question.weights.length; i++) {
+                sum_weight += DecisionSystem.question.weights[i]
+                cumulative_weights.push(sum_weight)
+            }
+            for (var i = 0; i < DecisionSystem.question.weights.length; i++) {
+                cumulative_weights[i] /= sum_weight
+            }
+            cumulative_weights[cumulative_weights.length - 1] = 1.0
+            DecisionSystem.decision_thresholds = cumulative_weights
+            console.log('Question:', DecisionSystem.question)
+            console.log('DisplayType:', DecisionSystem.display_type)
+            console.log('Decision Thresholds:', DecisionSystem.decision_thresholds)
+            DisplayDecisionSystem(DecisionSystem.display_type, DecisionSystem.question)
+        }
+
+        function AnnounceDecision() {
+            var final_decision = DecisionSystem.question.options[DecisionSystem.decision]
+            $('#final-decision')
+                .empty()
+                .append($(document.createElement('h2')).text('Decision'))
+                .append($(document.createElement('div'))
+                    .append(`<p>The final decision is: <strong>${final_decision}</strong></p>`))
+                .prop('hidden', false)
+            alert(`The final decision is: ${final_decision}`)
+        }
+
+        function Decide() {
+            var random = Math.random()
+            var decision = null
+            for (var i = 0; i < DecisionSystem.decision_thresholds.length; i++) {
+                if (random < DecisionSystem.decision_thresholds[i]) {
+                    decision = i
+                    break
+                }
+            }
+            DecisionSystem.result = random
+            DecisionSystem.decision = decision
+
+            var display_type = DecisionSystem.display_type
+            switch (display_type) {
+                case kDisplayTypeRoulette:
+                    RunDisplayRoulette(DecisionSystem.result)
+                    break
+                case kDisplayTypeSlot:
+                    RunDisplaySlotMachine(DecisionSystem.decision)
+                    break
+                default:
+                    alert('Invalid display type: ' + display_type)
+            }
+        }
+
+        function Init() {
+            ResetDecisionSystem()
+        }
+
+        Init()
     </script>
 
     <!-- Bootstrap core JavaScript -->

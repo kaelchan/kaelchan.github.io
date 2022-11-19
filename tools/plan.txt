@@ -1,0 +1,14 @@
+Terminologies
+
+-   question: options + weights
+-   decision: the chosen option
+
+Planning
+
+-   [x] refactor problem/decision -> question
+-   [x] refactor the question input process
+    -   [x] all of the confirm should refresh the decision system
+-   [ ] refactor choosing the display type
+-   [ ] display roulette
+-   [ ] display slot machine
+-   [ ] allow delete rows from custom row
